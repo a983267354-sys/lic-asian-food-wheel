@@ -1056,7 +1056,10 @@
         lon: -73.9419253
       };
 
+      const MIN_WHEEL_ITEMS = 10;
       const MAX_WHEEL_ITEMS = 20;
+      const MAX_POOL_ITEMS = 60;
+      const EXPANDED_RADIUS_LIMIT = 5000;
       const storageKey = "food-wheel-state-v3";
       const ASIAN_GROUPS = ["thai", "japanese", "chinese", "korean", "indian", "vietnamese", "malaysian", "taiwanese", "filipino", "asian"];
       const cuisineLabels = {
@@ -1422,6 +1425,7 @@
       let allRestaurants = [...curatedRestaurants];
       let restaurants = [];
       let state = loadState();
+      let effectiveRadius = 1600;
       let rotation = 0;
       let currentPick = null;
       let spinning = false;
@@ -1626,24 +1630,55 @@
         const radius = state.filters.radius;
         const cuisine = state.filters.cuisine;
         const occasion = state.filters.occasion;
-        const scored = allRestaurants
+        const radiusSteps = filterRadiusSteps(radius);
+        let scored = [];
+        effectiveRadius = radiusSteps[0] || radius;
+
+        for (const candidateRadius of radiusSteps) {
+          const candidates = filteredRestaurantsForRadius(location, cuisine, occasion, candidateRadius);
+          scored = candidates;
+          effectiveRadius = candidateRadius;
+          if (candidates.length >= MIN_WHEEL_ITEMS) break;
+        }
+
+        restaurants = scored.slice(0, MAX_POOL_ITEMS);
+        if (resetActive) {
+          state.active = firstWheelIndices();
+          currentPick = null;
+          rotation = 0;
+        } else {
+          state.active = state.active.filter((index) => restaurants[index]).slice(0, MAX_WHEEL_ITEMS);
+          if (!state.active.length) state.active = firstWheelIndices();
+        }
+        updateLocationText();
+        renderAll();
+      }
+
+      function filterRadiusSteps(radius) {
+        const baseRadius = Number(radius) || 1600;
+        return [...new Set([baseRadius, 1600, 3200, EXPANDED_RADIUS_LIMIT])]
+          .filter((candidateRadius) => candidateRadius >= baseRadius)
+          .sort((a, b) => a - b);
+      }
+
+      function filteredRestaurantsForRadius(location, cuisine, occasion, radius) {
+        return allRestaurants
           .map((restaurant) => enrichRestaurant(restaurant, location, cuisine, occasion))
           .filter((restaurant) => Number.isFinite(restaurant.distanceMeters))
           .filter((restaurant) => restaurant.distanceMeters <= radius)
           .filter((restaurant) => cuisineMatches(restaurant, cuisine))
           .filter((restaurant) => occasionMatches(restaurant, occasion))
           .sort((a, b) => b.score - a.score || a.distanceMeters - b.distanceMeters);
+      }
 
-        restaurants = scored.slice(0, MAX_WHEEL_ITEMS);
-        if (resetActive) {
-          state.active = restaurants.map((_, index) => index);
-          currentPick = null;
-          rotation = 0;
-        } else {
-          state.active = state.active.filter((index) => restaurants[index]);
-        }
-        updateLocationText();
-        renderAll();
+      function firstWheelIndices() {
+        return Array.from({ length: Math.min(MAX_WHEEL_ITEMS, restaurants.length) }, (_, index) => index);
+      }
+
+      function radiusExpansionNote() {
+        const requestedRadius = Number(state.filters.radius) || effectiveRadius;
+        if (effectiveRadius <= requestedRadius) return "";
+        return ` · 已扩大到 ${formatDistance(effectiveRadius)}`;
       }
 
       function enrichRestaurant(restaurant, location, cuisineFilter, occasionFilter) {
@@ -1992,15 +2027,33 @@
           return;
         }
         const skipped = currentPick;
+        const skippedName = restaurants[skipped]?.name || "这家";
         state.active = state.active.filter((item) => item !== skipped);
+        const replacement = findReplacementIndex(skipped);
+        let message = `${skippedName} 先跳过`;
+        if (replacement !== -1) {
+          state.active = [...state.active, replacement].sort((a, b) => a - b);
+          message += `，补上 ${restaurants[replacement].name}`;
+        } else {
+          message += "，附近暂无更多同类候选";
+        }
         currentPick = null;
         renderAll();
-        showToast(`${restaurants[skipped].name} 先跳过，重新抽。`);
+        showToast(`${message}，重新抽。`);
         spin();
       }
 
+      function findReplacementIndex(skippedIndex) {
+        const used = new Set(state.active);
+        used.add(skippedIndex);
+        for (let index = 0; index < restaurants.length; index += 1) {
+          if (!used.has(index)) return index;
+        }
+        return -1;
+      }
+
       function restoreAll() {
-        state.active = restaurants.map((_, index) => index);
+        state.active = firstWheelIndices();
         currentPick = null;
         renderAll();
         showToast("候选已恢复。");
@@ -2058,11 +2111,11 @@
           const nearby = await fetchNearbyRestaurants(location, state.filters.radius);
           mergeNearbyRestaurants(nearby);
           applyFilters();
-          sourceStatus.innerHTML = `<strong>${sourceName}</strong> · ${restaurants.length} 家候选`;
+          sourceStatus.innerHTML = `<strong>${sourceName}</strong> · ${restaurants.length} 家候选${radiusExpansionNote()}`;
           showToast(`已更新到 ${location.label}`);
         } catch (error) {
           applyFilters();
-          sourceStatus.innerHTML = `<strong>${sourceName}</strong> · 公开地图暂时没返回，先用精选名单`;
+          sourceStatus.innerHTML = `<strong>${sourceName}</strong> · 公开地图暂时没返回，先用 ${restaurants.length} 家精选${radiusExpansionNote()}`;
         } finally {
           setLoading(false);
         }
@@ -2126,14 +2179,15 @@
       async function fetchNearbyRestaurants(location, radius) {
         if (window.location.protocol === "file:") return [];
 
+        const queryRadius = Math.max(radius, EXPANDED_RADIUS_LIMIT);
         const query = `
           [out:json][timeout:25];
           (
-            node["amenity"~"restaurant|fast_food|cafe"](around:${Math.max(radius, 1200)},${location.lat},${location.lon});
-            way["amenity"~"restaurant|fast_food|cafe"](around:${Math.max(radius, 1200)},${location.lat},${location.lon});
-            relation["amenity"~"restaurant|fast_food|cafe"](around:${Math.max(radius, 1200)},${location.lat},${location.lon});
+            node["amenity"~"restaurant|fast_food|cafe"](around:${queryRadius},${location.lat},${location.lon});
+            way["amenity"~"restaurant|fast_food|cafe"](around:${queryRadius},${location.lat},${location.lon});
+            relation["amenity"~"restaurant|fast_food|cafe"](around:${queryRadius},${location.lat},${location.lon});
           );
-          out center tags 80;
+          out center tags 140;
         `;
         const response = await fetch("https://overpass-api.de/api/interpreter", {
           method: "POST",
@@ -2144,7 +2198,7 @@
         return data.elements
           .map((element) => osmElementToRestaurant(element))
           .filter(Boolean)
-          .slice(0, 80);
+          .slice(0, 140);
       }
 
       function osmElementToRestaurant(element) {
@@ -2234,7 +2288,7 @@
         saveState();
         applyFilters();
         if (!loadingNearby) {
-          sourceStatus.innerHTML = `<strong>${cuisineLabels[state.filters.cuisine] || "全部"}</strong> · ${restaurants.length} 家候选`;
+          sourceStatus.innerHTML = `<strong>${cuisineLabels[state.filters.cuisine] || "全部"}</strong> · ${restaurants.length} 家候选${radiusExpansionNote()}`;
         }
       }
 
@@ -2444,16 +2498,16 @@
       resizeCanvas();
       startIntro();
       if (window.location.protocol === "file:") {
-        sourceStatus.innerHTML = `<strong>本地预览</strong> · 线上链接支持自动查附近`;
+        sourceStatus.innerHTML = `<strong>本地预览</strong> · ${restaurants.length} 家候选${radiusExpansionNote()}，线上链接支持自动查附近`;
       } else {
         fetchNearbyRestaurants(state.location, state.filters.radius)
           .then((nearby) => {
             mergeNearbyRestaurants(nearby);
             applyFilters();
-            sourceStatus.innerHTML = `<strong>公开地图</strong> · ${restaurants.length} 家候选`;
+            sourceStatus.innerHTML = `<strong>公开地图</strong> · ${restaurants.length} 家候选${radiusExpansionNote()}`;
           })
           .catch(() => {
-            sourceStatus.innerHTML = `<strong>精选名单</strong> · ${restaurants.length} 家候选`;
+            sourceStatus.innerHTML = `<strong>精选名单</strong> · ${restaurants.length} 家候选${radiusExpansionNote()}`;
           })
           .finally(autoLocateOnce);
       }
