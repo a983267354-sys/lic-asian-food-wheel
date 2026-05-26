@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>LIC 亚洲美食转盘</title>
+    <title>附近吃什么转盘</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ffcf5f'/%3E%3Cpath d='M32 8v24l20-12A28 28 0 0 0 32 8Z' fill='%23ff6b6b'/%3E%3Cpath d='M32 32 12 44a28 28 0 0 0 40 0Z' fill='%2361d3b2'/%3E%3Ccircle cx='32' cy='32' r='9' fill='%23fff8e5'/%3E%3C/svg%3E"
@@ -46,7 +46,7 @@
 
       button,
       input,
-      textarea {
+      select {
         font: inherit;
       }
 
@@ -57,7 +57,7 @@
       .app {
         min-height: 100vh;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+        grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
         gap: 28px;
         padding: clamp(16px, 3vw, 36px);
       }
@@ -93,6 +93,7 @@
         margin: 0;
         color: var(--muted);
         font-size: 0.98rem;
+        line-height: 1.35;
       }
 
       .counter {
@@ -216,6 +217,7 @@
         color: var(--text);
         border: 1px solid var(--line);
         cursor: pointer;
+        text-decoration: none;
         transition:
           background 160ms ease,
           border-color 160ms ease,
@@ -242,10 +244,6 @@
         background: #ffda7e;
       }
 
-      .btn.danger {
-        color: #ffe6e6;
-      }
-
       .btn[disabled] {
         opacity: 0.48;
         cursor: not-allowed;
@@ -266,7 +264,7 @@
       .sidebar {
         min-width: 0;
         display: grid;
-        grid-template-rows: auto auto minmax(0, 1fr);
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
         gap: 14px;
       }
 
@@ -276,6 +274,89 @@
         border-radius: 8px;
         box-shadow: 0 22px 58px rgba(0, 0, 0, 0.25);
         backdrop-filter: blur(18px);
+      }
+
+      .finder-panel {
+        padding: 14px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+      }
+
+      .input,
+      .select {
+        width: 100%;
+        height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--text);
+        outline: none;
+      }
+
+      .input {
+        padding: 0 12px;
+      }
+
+      .select {
+        padding: 0 34px 0 10px;
+        appearance: none;
+        background-image:
+          linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+          linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+        background-position:
+          calc(100% - 18px) 18px,
+          calc(100% - 12px) 18px;
+        background-size:
+          6px 6px,
+          6px 6px;
+        background-repeat: no-repeat;
+      }
+
+      .input:focus,
+      .select:focus {
+        border-color: rgba(255, 207, 95, 0.72);
+        box-shadow: 0 0 0 3px rgba(255, 207, 95, 0.12);
+      }
+
+      .field-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 760;
+      }
+
+      .source-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .source-status {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.38;
+      }
+
+      .source-status strong {
+        color: var(--text);
       }
 
       .result-panel {
@@ -321,6 +402,12 @@
         font-size: 0.84rem;
       }
 
+      .pill.hot {
+        background: rgba(255, 207, 95, 0.16);
+        border-color: rgba(255, 207, 95, 0.24);
+        color: #ffe7a4;
+      }
+
       .result-note,
       .result-address {
         margin: 0;
@@ -353,7 +440,7 @@
       }
 
       .restaurant-list {
-        max-height: min(48vh, 520px);
+        max-height: min(44vh, 520px);
         overflow: auto;
         padding: 0 10px 10px;
         scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
@@ -491,7 +578,7 @@
         }
 
         .sidebar {
-          grid-template-rows: auto auto auto;
+          grid-template-rows: auto auto auto auto;
         }
 
         .restaurant-list {
@@ -499,7 +586,7 @@
         }
       }
 
-      @media (max-width: 560px) {
+      @media (max-width: 620px) {
         .app {
           padding: 14px;
           gap: 18px;
@@ -527,6 +614,12 @@
 
         .center-button {
           width: 116px;
+        }
+
+        .actions,
+        .search-row,
+        .field-grid {
+          grid-template-columns: 1fr;
         }
 
         .actions {
@@ -559,8 +652,8 @@
       <section class="stage" aria-label="转盘">
         <div class="topbar">
           <div class="brand">
-            <h1>今晚吃什么</h1>
-            <p>25-20 43rd Ave 附近亚洲口味</p>
+            <h1>附近吃什么</h1>
+            <p id="locationLabel">正在准备附近餐厅</p>
           </div>
           <div class="counter" id="activeCount">20 家</div>
         </div>
@@ -598,22 +691,87 @@
               <path d="M3 12a9 9 0 1 0 3-6.7" />
               <path d="M3 3v6h6" />
             </svg>
-            恢复 20 家
+            恢复候选
           </button>
         </div>
       </section>
 
       <aside class="sidebar">
+        <section class="panel finder-panel">
+          <form class="search-row" id="locationForm">
+            <input class="input" id="addressInput" type="search" autocomplete="street-address" placeholder="输入地址、地标或街区" />
+            <button class="btn primary" id="searchButton" type="submit">
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              查附近
+            </button>
+          </form>
+
+          <button class="btn" id="locateButton" type="button">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12 2v3" />
+              <path d="M12 19v3" />
+              <path d="M2 12h3" />
+              <path d="M19 12h3" />
+              <circle cx="12" cy="12" r="7" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+            使用当前位置
+          </button>
+
+          <div class="field-grid">
+            <div class="field">
+              <label for="radiusSelect">距离</label>
+              <select class="select" id="radiusSelect">
+                <option value="800">近一点</option>
+                <option value="1600" selected>附近</option>
+                <option value="3200">值得走</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="cuisineSelect">口味</label>
+              <select class="select" id="cuisineSelect">
+                <option value="all">都可以</option>
+                <option value="asian" selected>亚洲口味</option>
+                <option value="thai">泰餐</option>
+                <option value="japanese">日餐</option>
+                <option value="chinese">中餐</option>
+                <option value="korean">韩餐</option>
+                <option value="indian">印度菜</option>
+                <option value="american">美国口味</option>
+                <option value="western">西餐</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="occasionSelect">场景</label>
+              <select class="select" id="occasionSelect">
+                <option value="all">都行</option>
+                <option value="daily">日常</option>
+                <option value="lunch">午餐</option>
+                <option value="dinner">晚餐</option>
+                <option value="quick">快速随便</option>
+                <option value="big">值得吃大餐</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="source-row">
+            <p class="source-status" id="sourceStatus">默认使用 LIC 精选和公开地图数据。</p>
+          </div>
+        </section>
+
         <section class="panel result-panel" aria-live="polite">
           <p class="eyebrow" id="resultEyebrow">今天交给转盘</p>
           <h2 class="result-name" id="resultName">先转一下</h2>
           <div class="result-meta" id="resultMeta">
             <span class="pill">亚洲口味</span>
-            <span class="pill">LIC / Court Square</span>
+            <span class="pill">附近</span>
           </div>
           <p class="result-address" id="resultAddress">25-20 43rd Ave, Long Island City, NY 11101</p>
           <p class="result-note" id="resultNote">选择困难先放一边。</p>
-          <a class="btn primary" id="mapLink" href="https://www.google.com/maps/search/?api=1&query=Asian%20restaurants%20near%2025-20%2043rd%20Ave%20Long%20Island%20City%20NY%2011101" target="_blank" rel="noreferrer">
+          <a class="btn primary" id="mapLink" href="https://www.google.com/maps/search/?api=1&query=restaurants%20near%2025-20%2043rd%20Ave%20Long%20Island%20City%20NY%2011101" target="_blank" rel="noreferrer">
             <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
               <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z" />
               <circle cx="12" cy="10" r="3" />
@@ -652,128 +810,312 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
-      const restaurants = [
+      const DEFAULT_LOCATION = {
+        label: "25-20 43rd Ave, Long Island City",
+        lat: 40.7483622,
+        lon: -73.9419253
+      };
+
+      const MAX_WHEEL_ITEMS = 20;
+      const storageKey = "food-wheel-state-v3";
+      const ASIAN_GROUPS = ["thai", "japanese", "chinese", "korean", "indian", "vietnamese", "malaysian", "taiwanese", "filipino", "asian"];
+      const cuisineLabels = {
+        asian: "亚洲口味",
+        thai: "泰餐",
+        japanese: "日餐",
+        chinese: "中餐",
+        korean: "韩餐",
+        indian: "印度菜",
+        american: "美国口味",
+        western: "西餐",
+        mexican: "墨西哥菜",
+        italian: "意餐",
+        cafe: "咖啡简餐",
+        other: "餐厅"
+      };
+
+      const curatedRestaurants = [
         {
           name: "Soothr LIC",
           cuisine: "泰餐",
+          group: "thai",
           address: "25-20 43rd Ave",
-          note: "Khao soi、pad see ew、螃蟹咖喱，楼下就能开吃。"
+          lat: 40.7483622,
+          lon: -73.9419253,
+          occasions: ["daily", "lunch", "dinner", "big"],
+          sources: ["本地精选"],
+          rank: 94,
+          note: "Khao soi、pad see ew、螃蟹咖喱，近到不用纠结。"
         },
         {
           name: "Vert Frais",
           cuisine: "日式拉面",
+          group: "japanese",
           address: "43-10 Crescent St",
-          note: "拉面、饭碗、舒芙蕾松饼，午饭和 brunch 都很合适。"
+          lat: 40.7486893,
+          lon: -73.9428017,
+          occasions: ["daily", "lunch", "quick"],
+          sources: ["Michelin"],
+          rank: 92,
+          note: "拉面、饭碗、舒芙蕾松饼，午饭和 brunch 都合适。"
         },
         {
           name: "Ooi Sushi & Bar",
           cuisine: "寿司",
+          group: "japanese",
           address: "42-36 Crescent St",
+          lat: 40.7498113,
+          lon: -73.941477,
+          occasions: ["daily", "lunch", "dinner"],
+          sources: ["本地精选"],
+          rank: 84,
           note: "想吃清爽一点时，寿司和 sashimi 比较稳。"
         },
         {
           name: "Nai Brother LIC",
           cuisine: "酸菜鱼",
+          group: "chinese",
           address: "27-17 42nd Rd",
+          lat: 40.7492408,
+          lon: -73.9398493,
+          occasions: ["daily", "dinner", "big"],
+          sources: ["本地精选"],
+          rank: 87,
           note: "酸菜鱼、青花椒、番茄锅，适合想吃热汤重口。"
         },
         {
           name: "Kyuramen LIC",
           cuisine: "日式拉面",
+          group: "japanese",
           address: "27-17 42nd Rd",
+          lat: 40.7492408,
+          lon: -73.9398493,
+          occasions: ["daily", "lunch", "quick"],
+          sources: ["本地精选"],
+          rank: 82,
           note: "豚骨拉面、咖喱饭、蛋包饭，快准稳。"
         },
         {
           name: "Master L Rice Noodle",
           cuisine: "云南米线",
+          group: "chinese",
           address: "42-43 27th St",
+          lat: 40.7490166,
+          lon: -73.9405741,
+          occasions: ["daily", "lunch", "quick"],
+          sources: ["本地精选"],
+          rank: 83,
           note: "过桥米线和小吃，冷天尤其友好。"
         },
         {
           name: "Raj's Indian Kitchen",
           cuisine: "印度菜",
+          group: "indian",
           address: "42-12 28th St",
+          lat: 40.7495783,
+          lon: -73.9395712,
+          occasions: ["daily", "lunch", "dinner"],
+          sources: ["本地精选"],
+          rank: 82,
           note: "咖喱、naan、biryani，外卖和堂食都轻松。"
         },
         {
           name: "Xi'an Famous Foods",
           cuisine: "西安小吃",
+          group: "chinese",
           address: "26-19 Jackson Ave",
+          lat: 40.7475864,
+          lon: -73.9417972,
+          occasions: ["daily", "lunch", "quick"],
+          sources: ["本地精选"],
+          rank: 88,
           note: "油泼面、孜然羊肉、肉夹馍，选择困难时很能救场。"
         },
         {
           name: "Red Sorghum",
           cuisine: "中餐",
+          group: "chinese",
           address: "28-03 Jackson Ave",
+          lat: 40.7484928,
+          lon: -73.9390719,
+          occasions: ["dinner", "big"],
+          sources: ["本地精选"],
+          rank: 84,
           note: "偏湖南/中式小炒，适合多人点菜。"
         },
         {
           name: "Dim Sum Palace LIC",
           cuisine: "粤式点心",
+          group: "chinese",
           address: "24-28 Jackson Ave",
+          lat: 40.7462573,
+          lon: -73.9441291,
+          occasions: ["lunch", "dinner", "big"],
+          sources: ["本地精选"],
+          rank: 86,
           note: "虾饺、烧卖、肠粉、小笼，一桌小笼屉解决晚饭。"
         },
         {
           name: "Gacha Gacha",
           cuisine: "日式居酒屋",
+          group: "japanese",
           address: "44-46 23rd St",
+          lat: 40.747927,
+          lon: -73.9451272,
+          occasions: ["dinner", "big"],
+          sources: ["本地精选"],
+          rank: 84,
           note: "寿司、小食、清酒，适合下班随便坐坐。"
         },
         {
           name: "Umiya",
           cuisine: "日式",
+          group: "japanese",
           address: "22-22 Jackson Ave",
+          lat: 40.745239,
+          lon: -73.9466943,
+          occasions: ["daily", "lunch", "dinner"],
+          sources: ["本地精选"],
+          rank: 81,
           note: "寿司、日式主食，离 Court Square 很近。"
         },
         {
           name: "Hibino LIC",
           cuisine: "日式家常",
+          group: "japanese",
           address: "10-70 Jackson Ave",
+          lat: 40.7426774,
+          lon: -73.952036,
+          occasions: ["daily", "dinner"],
+          sources: ["本地精选"],
+          rank: 88,
           note: "豆腐、obanzai、小菜和寿司，口味更温柔。"
         },
         {
           name: "Takumen",
           cuisine: "拉面居酒屋",
+          group: "japanese",
           address: "5-50 50th Ave",
+          lat: 40.7426921,
+          lon: -73.9546853,
+          occasions: ["daily", "dinner", "big"],
+          sources: ["本地精选"],
+          rank: 86,
           note: "拉面、日式小菜、啤酒，稍微走一走很值得。"
         },
         {
           name: "Hupo",
           cuisine: "川菜",
+          group: "chinese",
           address: "10-07 50th Ave",
+          lat: 40.742822,
+          lon: -73.9535987,
+          occasions: ["dinner", "big"],
+          sources: ["The Infatuation"],
+          rank: 91,
           note: "麻婆豆腐、干锅、孜然羊，想吃辣就让它上桌。"
         },
         {
           name: "MOGMOG",
           cuisine: "日式便当",
+          group: "japanese",
           address: "5-35 51st Ave",
+          lat: 40.7423459,
+          lon: -73.9551583,
+          occasions: ["daily", "lunch", "quick"],
+          sources: ["本地精选"],
+          rank: 83,
           note: "日式熟食、饭团、便当，轻松快速。"
         },
         {
           name: "Little Banchan Shop",
           cuisine: "韩餐",
+          group: "korean",
           address: "5-28 49th Ave",
+          lat: 40.7435774,
+          lon: -73.9552144,
+          occasions: ["daily", "lunch", "dinner"],
+          sources: ["本地精选"],
+          rank: 84,
           note: "韩式小菜、拌饭、汤类，适合想吃干净家常。"
         },
         {
           name: "Kuku Korean Cuisine",
           cuisine: "韩餐",
+          group: "korean",
           address: "40-09 21st St",
+          lat: 40.7546482,
+          lon: -73.9414695,
+          occasions: ["dinner", "big"],
+          sources: ["本地精选"],
+          rank: 82,
           note: "烤肉、锅物、韩式主食，适合聚餐。"
         },
         {
           name: "Gyu-Kaku LIC",
           cuisine: "日式烧肉",
+          group: "japanese",
           address: "47-23 Vernon Blvd",
+          lat: 40.744929,
+          lon: -73.9531275,
+          occasions: ["dinner", "big"],
+          sources: ["本地精选"],
+          rank: 83,
           note: "自己烤肉，适合把选择困难变成动手劳动。"
         },
         {
           name: "Gulp",
           cuisine: "台式/亚洲小吃",
+          group: "taiwanese",
           address: "42-45 27th St",
+          lat: 40.7489917,
+          lon: -73.9406592,
+          occasions: ["daily", "lunch", "quick"],
+          sources: ["本地精选"],
+          rank: 80,
           note: "卤肉饭、炸鸡、小吃，随意但快乐。"
+        },
+        {
+          name: "Casa Enrique",
+          cuisine: "墨西哥菜",
+          group: "mexican",
+          address: "5-48 49th Ave",
+          lat: 40.743095,
+          lon: -73.954994,
+          occasions: ["dinner", "big"],
+          sources: ["The Infatuation"],
+          rank: 93,
+          note: "更像认真吃一顿的选择，适合约饭和请朋友。"
+        },
+        {
+          name: "Levante",
+          cuisine: "意餐",
+          group: "italian",
+          address: "26-21 Jackson Ave",
+          lat: 40.74751,
+          lon: -73.94165,
+          occasions: ["daily", "dinner", "big"],
+          sources: ["本地精选"],
+          rank: 86,
+          note: "披萨、pasta、喝一杯，稳妥不费脑。"
+        },
+        {
+          name: "Court Square Diner",
+          cuisine: "美式 diner",
+          group: "american",
+          address: "45-30 23rd St",
+          lat: 40.74712,
+          lon: -73.94551,
+          occasions: ["daily", "lunch", "dinner", "quick"],
+          sources: ["本地精选"],
+          rank: 79,
+          note: "美式 diner，适合日常、晚一点或想吃简单热食。"
         }
-      ];
+      ].map((restaurant, index) => ({
+        id: `curated-${index}`,
+        sourceType: "curated",
+        ...restaurant
+      }));
 
       const colors = [
         "#ff6b6b",
@@ -798,7 +1140,6 @@
         "#ffbe0b"
       ];
 
-      const storageKey = "lic-asian-wheel-state-v1";
       const canvas = document.getElementById("wheel");
       const ctx = canvas.getContext("2d");
       const spinButton = document.getElementById("spinButton");
@@ -820,36 +1161,65 @@
       const historyEmpty = document.getElementById("historyEmpty");
       const clearHistory = document.getElementById("clearHistory");
       const toast = document.getElementById("toast");
+      const locationLabel = document.getElementById("locationLabel");
+      const sourceStatus = document.getElementById("sourceStatus");
+      const locationForm = document.getElementById("locationForm");
+      const addressInput = document.getElementById("addressInput");
+      const locateButton = document.getElementById("locateButton");
+      const searchButton = document.getElementById("searchButton");
+      const radiusSelect = document.getElementById("radiusSelect");
+      const cuisineSelect = document.getElementById("cuisineSelect");
+      const occasionSelect = document.getElementById("occasionSelect");
 
       const TAU = Math.PI * 2;
+      let allRestaurants = [...curatedRestaurants];
+      let restaurants = [];
       let state = loadState();
       let rotation = 0;
       let currentPick = null;
       let spinning = false;
+      let loadingNearby = false;
       let toastTimer = null;
 
       function loadState() {
         try {
           const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
-          const active = Array.isArray(saved.active)
-            ? saved.active.filter((index) => Number.isInteger(index) && restaurants[index])
-            : restaurants.map((_, index) => index);
           return {
-            active: active.length ? active : restaurants.map((_, index) => index),
-            history: Array.isArray(saved.history)
-              ? saved.history.filter((item) => restaurants[item])
-              : []
+            active: [],
+            history: Array.isArray(saved.history) ? saved.history.slice(0, 12) : [],
+            location: saved.location || DEFAULT_LOCATION,
+            filters: {
+              radius: Number(saved.filters?.radius || 1600),
+              cuisine: saved.filters?.cuisine || "asian",
+              occasion: saved.filters?.occasion || "all"
+            }
           };
         } catch {
           return {
-            active: restaurants.map((_, index) => index),
-            history: []
+            active: [],
+            history: [],
+            location: DEFAULT_LOCATION,
+            filters: { radius: 1600, cuisine: "asian", occasion: "all" }
           };
         }
       }
 
       function saveState() {
-        localStorage.setItem(storageKey, JSON.stringify(state));
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            history: state.history,
+            location: state.location,
+            filters: state.filters
+          })
+        );
+      }
+
+      function setInitialControls() {
+        radiusSelect.value = String(state.filters.radius);
+        cuisineSelect.value = state.filters.cuisine;
+        occasionSelect.value = state.filters.occasion;
+        addressInput.value = state.location?.label || "";
       }
 
       function resizeCanvas() {
@@ -924,6 +1294,7 @@
       }
 
       function drawSliceLabel(restaurant, restaurantIndex, angle, radius, count) {
+        if (!restaurant) return;
         if (radius < 230) {
           drawCompactSliceLabel(restaurantIndex, angle, radius);
           return;
@@ -982,6 +1353,63 @@
         return (r * 299 + g * 587 + b * 114) / 1000 > 150;
       }
 
+      function applyFilters({ resetActive = true } = {}) {
+        const location = state.location || DEFAULT_LOCATION;
+        const radius = state.filters.radius;
+        const cuisine = state.filters.cuisine;
+        const occasion = state.filters.occasion;
+        const scored = allRestaurants
+          .map((restaurant) => enrichRestaurant(restaurant, location, cuisine, occasion))
+          .filter((restaurant) => Number.isFinite(restaurant.distanceMeters))
+          .filter((restaurant) => restaurant.distanceMeters <= radius)
+          .filter((restaurant) => cuisineMatches(restaurant, cuisine))
+          .filter((restaurant) => occasionMatches(restaurant, occasion))
+          .sort((a, b) => b.score - a.score || a.distanceMeters - b.distanceMeters);
+
+        restaurants = scored.slice(0, MAX_WHEEL_ITEMS);
+        if (resetActive) {
+          state.active = restaurants.map((_, index) => index);
+          currentPick = null;
+          rotation = 0;
+        } else {
+          state.active = state.active.filter((index) => restaurants[index]);
+        }
+        updateLocationText();
+        renderAll();
+      }
+
+      function enrichRestaurant(restaurant, location, cuisineFilter, occasionFilter) {
+        const distance = restaurant.lat && restaurant.lon ? distanceMeters(location, restaurant) : Infinity;
+        const distanceScore = Number.isFinite(distance) ? Math.max(0, 34 - distance / 85) : 0;
+        const sourceScore = restaurant.sources?.includes("Michelin")
+          ? 12
+          : restaurant.sources?.includes("The Infatuation")
+            ? 9
+            : restaurant.sourceType === "curated"
+              ? 7
+              : 0;
+        const cuisineScore = cuisineFilter !== "all" && cuisineMatches(restaurant, cuisineFilter) ? 12 : 0;
+        const occasionScore = occasionFilter !== "all" && occasionMatches(restaurant, occasionFilter) ? 9 : 0;
+        const dataScore = restaurant.website ? 2 : 0;
+        return {
+          ...restaurant,
+          distanceMeters: Math.round(distance),
+          score: Math.round((restaurant.rank || 62) + distanceScore + sourceScore + cuisineScore + occasionScore + dataScore)
+        };
+      }
+
+      function cuisineMatches(restaurant, filter) {
+        if (filter === "all") return true;
+        if (filter === "asian") return ASIAN_GROUPS.includes(restaurant.group);
+        if (filter === "western") return ["american", "italian", "french", "steakhouse", "western"].includes(restaurant.group);
+        return restaurant.group === filter;
+      }
+
+      function occasionMatches(restaurant, filter) {
+        if (filter === "all") return true;
+        return restaurant.occasions?.includes(filter);
+      }
+
       function renderAll() {
         renderCounts();
         renderRestaurants();
@@ -991,15 +1419,26 @@
 
       function renderCounts() {
         const canSkipCurrent = currentPick !== null && state.active.includes(currentPick);
+        const total = restaurants.length;
         activeCount.textContent = `${state.active.length} 家`;
-        centerHint.textContent = `${state.active.length} 选 1`;
-        listCount.textContent = `${state.active.length} / ${restaurants.length}`;
+        centerHint.textContent = total ? `${state.active.length} 选 1` : "无候选";
+        listCount.textContent = `${state.active.length} / ${total}`;
+        spinButton.disabled = spinning || state.active.length === 0;
+        spinCenter.disabled = spinning || state.active.length === 0;
         skipButton.disabled = spinning || state.active.length < 2;
         skipLabel.textContent = canSkipCurrent ? "这家先跳过" : "先随机一家";
       }
 
       function renderRestaurants() {
         restaurantList.innerHTML = "";
+        if (!restaurants.length) {
+          const empty = document.createElement("p");
+          empty.className = "empty";
+          empty.textContent = "这组筛选暂时没有候选，换个距离或口味。";
+          restaurantList.appendChild(empty);
+          return;
+        }
+
         restaurants.forEach((restaurant, index) => {
           const active = state.active.includes(index);
           const item = document.createElement("article");
@@ -1018,7 +1457,7 @@
             <p class="restaurant-sub"></p>
           `;
           main.querySelector(".restaurant-title").textContent = restaurant.name;
-          main.querySelector(".restaurant-sub").textContent = `${restaurant.cuisine} · ${restaurant.address}`;
+          main.querySelector(".restaurant-sub").textContent = `${restaurant.cuisine} · ${formatDistance(restaurant.distanceMeters)} · ${restaurant.address || "附近"}`;
 
           const toggle = document.createElement("button");
           toggle.className = "mini-btn";
@@ -1038,33 +1477,43 @@
       function renderHistory() {
         historyList.innerHTML = "";
         historyEmpty.hidden = state.history.length > 0;
-        state.history.slice(0, 8).forEach((restaurantIndex) => {
-          const restaurant = restaurants[restaurantIndex];
+        state.history.slice(0, 8).forEach((item) => {
           const pill = document.createElement("span");
           pill.className = "pill";
-          pill.textContent = restaurant.name;
+          pill.textContent = item.name || item;
           historyList.appendChild(pill);
         });
       }
 
       function setResult(index) {
         const restaurant = restaurants[index];
+        if (!restaurant) return;
         currentPick = index;
         resultEyebrow.textContent = "转盘选中";
         resultName.textContent = restaurant.name;
         resultMeta.innerHTML = "";
-        [restaurant.cuisine, "Long Island City"].forEach((text) => {
+        [
+          restaurant.cuisine,
+          formatDistance(restaurant.distanceMeters),
+          ...sourcePills(restaurant)
+        ].forEach((text, pillIndex) => {
           const pill = document.createElement("span");
-          pill.className = "pill";
+          pill.className = pillIndex > 1 ? "pill hot" : "pill";
           pill.textContent = text;
           resultMeta.appendChild(pill);
         });
-        resultAddress.textContent = restaurant.address;
-        resultNote.textContent = restaurant.note;
-        mapLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name} ${restaurant.address} Long Island City NY`)}`;
-        state.history = [index, ...state.history.filter((item) => item !== index)].slice(0, 12);
+        resultAddress.textContent = restaurant.address || state.location.label || "附近";
+        resultNote.textContent = restaurant.note || `${restaurant.cuisine} · 综合推荐 ${restaurant.score}`;
+        mapLink.href = mapsUrl(restaurant);
+        state.history = [{ name: restaurant.name }, ...state.history.filter((item) => item.name !== restaurant.name)].slice(0, 12);
         saveState();
         renderAll();
+      }
+
+      function sourcePills(restaurant) {
+        if (restaurant.sources?.length) return restaurant.sources.slice(0, 2);
+        if (restaurant.sourceType === "map") return ["公开地图"];
+        return [`推荐 ${restaurant.score}`];
       }
 
       function randomSlot() {
@@ -1086,7 +1535,7 @@
           endRotation += TAU;
         }
 
-        const duration = 3600 + Math.random() * 900;
+        const duration = 3400 + Math.random() * 800;
         const start = performance.now();
         spinning = true;
         currentPick = null;
@@ -1134,7 +1583,6 @@
         } else {
           state.active = [...state.active, index].sort((a, b) => a - b);
         }
-        saveState();
         renderAll();
       }
 
@@ -1147,7 +1595,6 @@
         const skipped = currentPick;
         state.active = state.active.filter((item) => item !== skipped);
         currentPick = null;
-        saveState();
         renderAll();
         showToast(`${restaurants[skipped].name} 先跳过，重新抽。`);
         spin();
@@ -1156,9 +1603,244 @@
       function restoreAll() {
         state.active = restaurants.map((_, index) => index);
         currentPick = null;
-        saveState();
         renderAll();
-        showToast("20 家已恢复。");
+        showToast("候选已恢复。");
+      }
+
+      async function searchAddress(event) {
+        event?.preventDefault();
+        const query = addressInput.value.trim();
+        if (!query) {
+          showToast("先输入地址或地标。");
+          return;
+        }
+        setLoading(true, "正在查这个地址附近");
+        try {
+          const location = await geocodeAddress(query);
+          await setLocation(location, "地址");
+        } catch (error) {
+          showToast(error.message || "地址没查到。");
+          setLoading(false);
+        }
+      }
+
+      async function useCurrentLocation() {
+        if (!navigator.geolocation) {
+          showToast("这个浏览器不支持定位。");
+          return;
+        }
+        setLoading(true, "正在获取定位");
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const location = {
+              label: "当前位置",
+              lat: position.coords.latitude,
+              lon: position.coords.longitude
+            };
+            await setLocation(location, "定位");
+          },
+          () => {
+            setLoading(false);
+            sourceStatus.textContent = "定位没有打开，可以直接输入地址。";
+            showToast("没有拿到定位，手输地址也可以。");
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+        );
+      }
+
+      async function setLocation(location, sourceName) {
+        state.location = location;
+        addressInput.value = location.label;
+        saveState();
+        setLoading(true, `正在更新 ${location.label}`);
+        try {
+          const nearby = await fetchNearbyRestaurants(location, state.filters.radius);
+          mergeNearbyRestaurants(nearby);
+          applyFilters();
+          sourceStatus.innerHTML = `<strong>${sourceName}</strong> · ${restaurants.length} 家候选`;
+          showToast(`已更新到 ${location.label}`);
+        } catch (error) {
+          applyFilters();
+          sourceStatus.innerHTML = `<strong>${sourceName}</strong> · 公开地图暂时没返回，先用精选名单`;
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function geocodeAddress(query) {
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=zh-CN,en&q=${encodeURIComponent(query)}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("地址服务暂时不可用。");
+        const data = await response.json();
+        if (!data.length) throw new Error("没找到这个地址。");
+        return {
+          label: simplifyAddress(data[0].display_name || query),
+          lat: Number(data[0].lat),
+          lon: Number(data[0].lon)
+        };
+      }
+
+      async function fetchNearbyRestaurants(location, radius) {
+        if (window.location.protocol === "file:") return [];
+
+        const query = `
+          [out:json][timeout:25];
+          (
+            node["amenity"~"restaurant|fast_food|cafe"](around:${Math.max(radius, 1200)},${location.lat},${location.lon});
+            way["amenity"~"restaurant|fast_food|cafe"](around:${Math.max(radius, 1200)},${location.lat},${location.lon});
+            relation["amenity"~"restaurant|fast_food|cafe"](around:${Math.max(radius, 1200)},${location.lat},${location.lon});
+          );
+          out center tags 80;
+        `;
+        const response = await fetch("https://overpass-api.de/api/interpreter", {
+          method: "POST",
+          body: query
+        });
+        if (!response.ok) throw new Error("公开地图查询失败。");
+        const data = await response.json();
+        return data.elements
+          .map((element) => osmElementToRestaurant(element))
+          .filter(Boolean)
+          .slice(0, 80);
+      }
+
+      function osmElementToRestaurant(element) {
+        const tags = element.tags || {};
+        const name = tags.name || tags["name:en"] || tags["name:zh"];
+        if (!name) return null;
+        const lat = element.lat ?? element.center?.lat;
+        const lon = element.lon ?? element.center?.lon;
+        if (!lat || !lon) return null;
+        const group = groupFromCuisine(tags.cuisine, tags.amenity, name);
+        const cuisine = labelFromGroup(group, tags.cuisine);
+        const address = [
+          tags["addr:housenumber"],
+          tags["addr:street"],
+          tags["addr:city"]
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return {
+          id: `osm-${element.type}-${element.id}`,
+          sourceType: "map",
+          name,
+          cuisine,
+          group,
+          address: address || "附近",
+          lat: Number(lat),
+          lon: Number(lon),
+          occasions: occasionsFromTags(tags, group),
+          sources: ["公开地图"],
+          rank: tags.amenity === "restaurant" ? 70 : 62,
+          website: tags.website || tags["contact:website"],
+          note: `${cuisine} · ${tags.amenity === "fast_food" ? "适合快速吃" : "附近可选"}`
+        };
+      }
+
+      function mergeNearbyRestaurants(nearby) {
+        const curatedKeys = new Set(curatedRestaurants.map((restaurant) => normalizeName(restaurant.name)));
+        const uniqueNearby = nearby.filter((restaurant) => !curatedKeys.has(normalizeName(restaurant.name)));
+        allRestaurants = [...curatedRestaurants, ...uniqueNearby];
+      }
+
+      function groupFromCuisine(cuisine = "", amenity = "", name = "") {
+        const text = `${cuisine} ${name}`.toLowerCase();
+        if (/(thai|泰)/.test(text)) return "thai";
+        if (/(japanese|sushi|ramen|izakaya|yakitori|udon|日|寿司|拉面)/.test(text)) return "japanese";
+        if (/(chinese|szechuan|sichuan|cantonese|dim_sum|noodle|dumpling|中|川|粤|面|饺)/.test(text)) return "chinese";
+        if (/(korean|bbq|banchan|韩)/.test(text)) return "korean";
+        if (/(indian|curry|印度)/.test(text)) return "indian";
+        if (/(taiwanese|bubble_tea|台)/.test(text)) return "taiwanese";
+        if (/(vietnamese|pho|越南)/.test(text)) return "vietnamese";
+        if (/(american|burger|diner|sandwich|steak)/.test(text)) return "american";
+        if (/(italian|pizza|pasta)/.test(text)) return "italian";
+        if (/(mexican|taco|burrito)/.test(text)) return "mexican";
+        if (/(french)/.test(text)) return "french";
+        if (amenity === "cafe" || /(coffee|cafe|bakery)/.test(text)) return "cafe";
+        return "other";
+      }
+
+      function labelFromGroup(group, rawCuisine = "") {
+        if (group !== "other") return cuisineLabels[group] || "餐厅";
+        if (!rawCuisine) return "餐厅";
+        return rawCuisine
+          .split(";")[0]
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      }
+
+      function occasionsFromTags(tags, group) {
+        const occasions = new Set(["daily"]);
+        if (tags.amenity === "fast_food") occasions.add("quick");
+        if (["cafe", "american", "chinese", "japanese", "thai", "indian"].includes(group)) occasions.add("lunch");
+        if (!["cafe"].includes(group)) occasions.add("dinner");
+        if (["thai", "japanese", "chinese", "korean", "italian", "mexican"].includes(group)) occasions.add("big");
+        return [...occasions];
+      }
+
+      function onFilterChange() {
+        state.filters = {
+          radius: Number(radiusSelect.value),
+          cuisine: cuisineSelect.value,
+          occasion: occasionSelect.value
+        };
+        saveState();
+        applyFilters();
+        if (!loadingNearby) {
+          sourceStatus.innerHTML = `<strong>${cuisineLabels[state.filters.cuisine] || "全部"}</strong> · ${restaurants.length} 家候选`;
+        }
+      }
+
+      function updateLocationText() {
+        const label = state.location?.label || DEFAULT_LOCATION.label;
+        locationLabel.textContent = `${label} · ${cuisineLabels[state.filters.cuisine] || "都可以"}`;
+      }
+
+      function setLoading(isLoading, message = "") {
+        loadingNearby = isLoading;
+        locateButton.disabled = isLoading;
+        searchButton.disabled = isLoading;
+        radiusSelect.disabled = isLoading;
+        cuisineSelect.disabled = isLoading;
+        occasionSelect.disabled = isLoading;
+        if (message) sourceStatus.textContent = message;
+      }
+
+      function distanceMeters(a, b) {
+        const radius = 6371000;
+        const phi1 = toRadians(a.lat);
+        const phi2 = toRadians(b.lat);
+        const deltaPhi = toRadians(b.lat - a.lat);
+        const deltaLambda = toRadians(b.lon - a.lon);
+        const h =
+          Math.sin(deltaPhi / 2) ** 2 +
+          Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+        return radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+      }
+
+      function toRadians(value) {
+        return (Number(value) * Math.PI) / 180;
+      }
+
+      function formatDistance(meters) {
+        if (!Number.isFinite(meters)) return "附近";
+        if (meters < 1000) return `${Math.max(1, Math.round(meters / 10) * 10)}m`;
+        return `${(meters / 1000).toFixed(1)}km`;
+      }
+
+      function mapsUrl(restaurant) {
+        const query = restaurant.lat && restaurant.lon
+          ? `${restaurant.name} ${restaurant.lat},${restaurant.lon}`
+          : `${restaurant.name} ${restaurant.address || ""} ${state.location?.label || ""}`;
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+      }
+
+      function simplifyAddress(address) {
+        return address.split(",").slice(0, 3).join(",").trim();
+      }
+
+      function normalizeName(name) {
+        return name.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, "");
       }
 
       function showToast(message) {
@@ -1168,10 +1850,22 @@
         toastTimer = setTimeout(() => toast.classList.remove("show"), 1900);
       }
 
+      async function autoLocateOnce() {
+        const autoKey = "food-wheel-auto-location-v1";
+        if (localStorage.getItem(autoKey) || location.protocol !== "https:" || !navigator.geolocation) return;
+        localStorage.setItem(autoKey, "1");
+        window.setTimeout(useCurrentLocation, 700);
+      }
+
       spinButton.addEventListener("click", spin);
       spinCenter.addEventListener("click", spin);
       skipButton.addEventListener("click", skipCurrent);
       restoreButton.addEventListener("click", restoreAll);
+      locateButton.addEventListener("click", useCurrentLocation);
+      locationForm.addEventListener("submit", searchAddress);
+      [radiusSelect, cuisineSelect, occasionSelect].forEach((control) => {
+        control.addEventListener("change", onFilterChange);
+      });
       clearHistory.addEventListener("click", () => {
         state.history = [];
         saveState();
@@ -1179,8 +1873,23 @@
       });
 
       window.addEventListener("resize", resizeCanvas);
+      setInitialControls();
+      applyFilters();
       resizeCanvas();
-      renderAll();
+      if (window.location.protocol === "file:") {
+        sourceStatus.innerHTML = `<strong>本地预览</strong> · 线上链接支持自动查附近`;
+      } else {
+        fetchNearbyRestaurants(state.location, state.filters.radius)
+          .then((nearby) => {
+            mergeNearbyRestaurants(nearby);
+            applyFilters();
+            sourceStatus.innerHTML = `<strong>公开地图</strong> · ${restaurants.length} 家候选`;
+          })
+          .catch(() => {
+            sourceStatus.innerHTML = `<strong>精选名单</strong> · ${restaurants.length} 家候选`;
+          })
+          .finally(autoLocateOnce);
+      }
     </script>
   </body>
 </html>
