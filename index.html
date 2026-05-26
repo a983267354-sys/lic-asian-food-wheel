@@ -89,11 +89,41 @@
         letter-spacing: 0;
       }
 
-      .brand p {
-        margin: 0;
+      .quick-cuisine {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: max-content;
+        max-width: 100%;
         color: var(--muted);
         font-size: 0.98rem;
         line-height: 1.35;
+      }
+
+      .quick-cuisine span {
+        flex: 0 0 auto;
+        font-weight: 760;
+      }
+
+      .quick-cuisine-select {
+        width: 142px;
+        max-width: 48vw;
+        height: 34px;
+        padding: 0 30px 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        appearance: none;
+        color: var(--text);
+        background:
+          linear-gradient(45deg, transparent 50%, var(--muted) 50%) calc(100% - 17px) 14px / 6px 6px no-repeat,
+          linear-gradient(135deg, var(--muted) 50%, transparent 50%) calc(100% - 11px) 14px / 6px 6px no-repeat,
+          rgba(255, 255, 255, 0.07);
+        outline: none;
+      }
+
+      .quick-cuisine-select:focus {
+        border-color: rgba(255, 207, 95, 0.72);
+        box-shadow: 0 0 0 3px rgba(255, 207, 95, 0.12);
       }
 
       .counter {
@@ -746,7 +776,20 @@
         <div class="topbar">
           <div class="brand">
             <h1>嫣然吃什么</h1>
-            <p id="locationLabel">选择口味</p>
+            <label class="quick-cuisine" id="locationLabel" for="topCuisineSelect">
+              <span>选择口味</span>
+              <select class="quick-cuisine-select" id="topCuisineSelect">
+                <option value="all">都可以</option>
+                <option value="asian" selected>亚洲口味</option>
+                <option value="thai">泰餐</option>
+                <option value="japanese">日餐</option>
+                <option value="chinese">中餐</option>
+                <option value="korean">韩餐</option>
+                <option value="indian">印度菜</option>
+                <option value="american">美国口味</option>
+                <option value="western">西餐</option>
+              </select>
+            </label>
           </div>
           <div class="counter" id="activeCount">20 家</div>
         </div>
@@ -1268,6 +1311,7 @@
       const introCanvas = document.getElementById("introCanvas");
       const introSkip = document.getElementById("introSkip");
       const locationLabel = document.getElementById("locationLabel");
+      const topCuisineSelect = document.getElementById("topCuisineSelect");
       const sourceStatus = document.getElementById("sourceStatus");
       const locationForm = document.getElementById("locationForm");
       const addressInput = document.getElementById("addressInput");
@@ -1326,6 +1370,7 @@
       function setInitialControls() {
         radiusSelect.value = String(state.filters.radius);
         cuisineSelect.value = state.filters.cuisine;
+        topCuisineSelect.value = state.filters.cuisine;
         occasionSelect.value = state.filters.occasion;
         addressInput.value = state.location?.label || "";
       }
@@ -1886,10 +1931,13 @@
         return [...occasions];
       }
 
-      function onFilterChange() {
+      function onFilterChange(event) {
+        const cuisineValue = event?.target === topCuisineSelect ? topCuisineSelect.value : cuisineSelect.value;
+        cuisineSelect.value = cuisineValue;
+        topCuisineSelect.value = cuisineValue;
         state.filters = {
           radius: Number(radiusSelect.value),
-          cuisine: cuisineSelect.value,
+          cuisine: cuisineValue,
           occasion: occasionSelect.value
         };
         saveState();
@@ -1900,7 +1948,8 @@
       }
 
       function updateLocationText() {
-        locationLabel.textContent = "选择口味";
+        cuisineSelect.value = state.filters.cuisine;
+        topCuisineSelect.value = state.filters.cuisine;
       }
 
       function setLoading(isLoading, message = "") {
@@ -1909,6 +1958,7 @@
         searchButton.disabled = isLoading;
         radiusSelect.disabled = isLoading;
         cuisineSelect.disabled = isLoading;
+        topCuisineSelect.disabled = isLoading;
         occasionSelect.disabled = isLoading;
         if (message) sourceStatus.textContent = message;
       }
@@ -2072,7 +2122,7 @@
       restoreButton.addEventListener("click", restoreAll);
       locateButton.addEventListener("click", useCurrentLocation);
       locationForm.addEventListener("submit", searchAddress);
-      [radiusSelect, cuisineSelect, occasionSelect].forEach((control) => {
+      [radiusSelect, cuisineSelect, topCuisineSelect, occasionSelect].forEach((control) => {
         control.addEventListener("change", onFilterChange);
       });
       clearHistory.addEventListener("click", () => {
