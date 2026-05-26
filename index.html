@@ -494,6 +494,24 @@
         color: #ffe7a4;
       }
 
+      .pill.open {
+        background: rgba(97, 211, 178, 0.16);
+        border-color: rgba(97, 211, 178, 0.28);
+        color: #adf2dc;
+      }
+
+      .pill.closed {
+        background: rgba(255, 107, 107, 0.16);
+        border-color: rgba(255, 107, 107, 0.28);
+        color: #ffd4d4;
+      }
+
+      .pill.unknown {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #d8dde1;
+      }
+
       .result-note,
       .result-address {
         margin: 0;
@@ -1721,32 +1739,163 @@
       function setResult(index) {
         const restaurant = restaurants[index];
         if (!restaurant) return;
+        const hoursStatus = getOpenStatus(restaurant);
         currentPick = index;
-        resultEyebrow.textContent = "转盘选中";
+        resultEyebrow.textContent = hoursStatus.state === "open" ? "转盘选中" : "转盘选中 · 先确认营业";
         resultName.textContent = restaurant.name;
         resultMeta.innerHTML = "";
-        [
-          restaurant.cuisine,
-          formatDistance(restaurant.distanceMeters),
-          ...sourcePills(restaurant)
-        ].forEach((text, pillIndex) => {
+        const metaItems = [
+          { text: restaurant.cuisine, className: "pill" },
+          { text: formatDistance(restaurant.distanceMeters), className: "pill" },
+          { text: hoursStatus.label, className: `pill ${hoursStatus.state}` },
+          ...sourcePills(restaurant).map((text) => ({ text, className: "pill hot" }))
+        ];
+        metaItems.forEach(({ text, className }) => {
           const pill = document.createElement("span");
-          pill.className = pillIndex > 1 ? "pill hot" : "pill";
+          pill.className = className;
           pill.textContent = text;
           resultMeta.appendChild(pill);
         });
         resultAddress.textContent = restaurant.address || state.location.label || "附近";
-        resultNote.textContent = restaurant.note || `${restaurant.cuisine} · 综合推荐 ${restaurant.score}`;
+        resultNote.textContent = resultNoteText(restaurant, hoursStatus);
         mapLink.href = mapsUrl(restaurant);
         state.history = [{ name: restaurant.name }, ...state.history.filter((item) => item.name !== restaurant.name)].slice(0, 12);
         saveState();
         renderAll();
+        if (hoursStatus.state === "closed") {
+          showToast("这家现在可能没开，先确认一下。");
+        } else if (hoursStatus.state === "unknown") {
+          showToast("没查到营业时间，出发前确认一下。");
+        }
       }
 
       function sourcePills(restaurant) {
         if (restaurant.sources?.length) return restaurant.sources.slice(0, 2);
         if (restaurant.sourceType === "map") return ["公开地图"];
         return [`推荐 ${restaurant.score}`];
+      }
+
+      function resultNoteText(restaurant, hoursStatus) {
+        const base = restaurant.note || `${restaurant.cuisine} · 综合推荐 ${restaurant.score}`;
+        if (hoursStatus.state === "open") return `${base} · ${hoursStatus.detail}`;
+        if (hoursStatus.state === "closed") return `公开地图显示当前可能未营业，建议换一家或点导航确认。${hoursStatus.detail}`;
+        return `${base} · 营业时间数据缺失，出发前点导航确认。`;
+      }
+
+      function getOpenStatus(restaurant, now = new Date()) {
+        if (!restaurant.openingHours) {
+          return {
+            state: "unknown",
+            label: "营业时间未知",
+            detail: "没有可用的营业时间"
+          };
+        }
+
+        const parsed = isOpenFromOpeningHours(restaurant.openingHours, now);
+        if (parsed === null) {
+          return {
+            state: "unknown",
+            label: "营业时间未知",
+            detail: `营业时间格式：${restaurant.openingHours}`
+          };
+        }
+
+        return parsed
+          ? {
+              state: "open",
+              label: "营业中",
+              detail: `当前时间匹配营业时间：${restaurant.openingHours}`
+            }
+          : {
+              state: "closed",
+              label: "可能已关门",
+              detail: `营业时间：${restaurant.openingHours}`
+            };
+      }
+
+      function isOpenFromOpeningHours(openingHours, now) {
+        const hours = openingHours.trim();
+        if (!hours) return null;
+        if (/^24\/7$/i.test(hours)) return true;
+        if (/[A-Za-z]{2}\s+off/i.test(hours) || /\bPH\b/i.test(hours)) {
+          // Ignore explicit holidays/off rules if mixed with ordinary hour ranges.
+        }
+
+        const rules = hours
+          .split(";")
+          .map((rule) => rule.trim())
+          .filter(Boolean);
+        if (!rules.length) return null;
+
+        let sawParsableRule = false;
+        for (const rule of rules) {
+          const result = ruleMatchesNow(rule, now);
+          if (result !== null) {
+            sawParsableRule = true;
+            if (result) return true;
+          }
+        }
+        return sawParsableRule ? false : null;
+      }
+
+      function ruleMatchesNow(rule, now) {
+        const normalized = rule.replace(/\s+/g, " ").replace(/,/g, ", ");
+        if (/\boff\b/i.test(normalized)) {
+          return false;
+        }
+
+        const timeMatches = [...normalized.matchAll(/(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?/g)];
+        if (!timeMatches.length) return null;
+
+        const dayPart = normalized.slice(0, timeMatches[0].index).trim();
+        const dayMatches = !dayPart || dayPartMatchesNow(dayPart, now);
+        if (!dayMatches) return false;
+
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        for (const match of timeMatches) {
+          const start = Number(match[1]) * 60 + Number(match[2] || 0);
+          const end = Number(match[3]) * 60 + Number(match[4] || 0);
+          if (timeRangeContains(start, end, currentMinutes)) return true;
+        }
+        return false;
+      }
+
+      function dayPartMatchesNow(dayPart, now) {
+        const dayTokens = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+        const today = now.getDay();
+        const compact = dayPart.replace(/\s/g, "");
+        if (!/[A-Za-z]{2}/.test(compact)) return true;
+
+        const parts = compact.split(",");
+        for (const part of parts) {
+          const range = part.match(/([A-Za-z]{2})-([A-Za-z]{2})/);
+          if (range) {
+            const start = dayTokens.indexOf(normalizeDayToken(range[1]));
+            const end = dayTokens.indexOf(normalizeDayToken(range[2]));
+            if (start >= 0 && end >= 0 && dayInRange(today, start, end)) return true;
+            continue;
+          }
+          const single = part.match(/[A-Za-z]{2}/);
+          if (single && dayTokens.indexOf(normalizeDayToken(single[0])) === today) return true;
+        }
+        return false;
+      }
+
+      function normalizeDayToken(token) {
+        const lower = token.slice(0, 2).toLowerCase();
+        const map = { su: "Su", mo: "Mo", tu: "Tu", we: "We", th: "Th", fr: "Fr", sa: "Sa" };
+        return map[lower] || "";
+      }
+
+      function dayInRange(today, start, end) {
+        if (start <= end) return today >= start && today <= end;
+        return today >= start || today <= end;
+      }
+
+      function timeRangeContains(start, end, current) {
+        if (start === end) return true;
+        if (start < end) return current >= start && current <= end;
+        return current >= start || current <= end;
       }
 
       function randomSlot() {
@@ -2009,6 +2158,7 @@
           occasions: occasionsFromTags(tags, group),
           sources: ["公开地图"],
           rank: tags.amenity === "restaurant" ? 70 : 62,
+          openingHours: tags.opening_hours,
           website: tags.website || tags["contact:website"],
           note: `${cuisine} · ${tags.amenity === "fast_food" ? "适合快速吃" : "附近可选"}`
         };
