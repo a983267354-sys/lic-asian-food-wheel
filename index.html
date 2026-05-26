@@ -1430,9 +1430,26 @@
       let introAnimation = null;
       let introCloseTimer = null;
 
+      function safeStorageGet(key) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      }
+
+      function safeStorageSet(key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
       function loadState() {
         try {
-          const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+          const saved = JSON.parse(safeStorageGet(storageKey) || "{}");
           return {
             active: [],
             history: Array.isArray(saved.history) ? saved.history.slice(0, 12) : [],
@@ -1454,7 +1471,7 @@
       }
 
       function saveState() {
-        localStorage.setItem(
+        safeStorageSet(
           storageKey,
           JSON.stringify({
             history: state.history,
@@ -2396,8 +2413,8 @@
 
       async function autoLocateOnce() {
         const autoKey = "food-wheel-auto-location-v1";
-        if (localStorage.getItem(autoKey) || location.protocol !== "https:" || !navigator.geolocation) return;
-        localStorage.setItem(autoKey, "1");
+        if (safeStorageGet(autoKey) || location.protocol !== "https:" || !navigator.geolocation) return;
+        safeStorageSet(autoKey, "1");
         window.setTimeout(useCurrentLocation, 700);
       }
 
