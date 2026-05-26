@@ -586,12 +586,12 @@
             </svg>
             开转
           </button>
-          <button class="btn" id="skipButton" type="button" disabled>
+          <button class="btn" id="skipButton" type="button">
             <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
               <path d="M18 6 6 18" />
               <path d="m6 6 12 12" />
             </svg>
-            这家先跳过
+            <span id="skipLabel">先随机一家</span>
           </button>
           <button class="btn" id="restoreButton" type="button">
             <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
@@ -804,6 +804,7 @@
       const spinButton = document.getElementById("spinButton");
       const spinCenter = document.getElementById("spinCenter");
       const skipButton = document.getElementById("skipButton");
+      const skipLabel = document.getElementById("skipLabel");
       const restoreButton = document.getElementById("restoreButton");
       const activeCount = document.getElementById("activeCount");
       const centerHint = document.getElementById("centerHint");
@@ -989,10 +990,12 @@
       }
 
       function renderCounts() {
+        const canSkipCurrent = currentPick !== null && state.active.includes(currentPick);
         activeCount.textContent = `${state.active.length} 家`;
         centerHint.textContent = `${state.active.length} 选 1`;
         listCount.textContent = `${state.active.length} / ${restaurants.length}`;
-        skipButton.disabled = spinning || currentPick === null || !state.active.includes(currentPick) || state.active.length < 2;
+        skipButton.disabled = spinning || state.active.length < 2;
+        skipLabel.textContent = canSkipCurrent ? "这家先跳过" : "先随机一家";
       }
 
       function renderRestaurants() {
@@ -1136,12 +1139,18 @@
       }
 
       function skipCurrent() {
-        if (currentPick === null || state.active.length < 2) return;
-        state.active = state.active.filter((item) => item !== currentPick);
-        showToast(`${restaurants[currentPick].name} 先跳过`);
+        if (spinning || state.active.length < 2) return;
+        if (currentPick === null || !state.active.includes(currentPick)) {
+          spin();
+          return;
+        }
+        const skipped = currentPick;
+        state.active = state.active.filter((item) => item !== skipped);
         currentPick = null;
         saveState();
         renderAll();
+        showToast(`${restaurants[skipped].name} 先跳过，重新抽。`);
+        window.setTimeout(spin, 220);
       }
 
       function restoreAll() {
