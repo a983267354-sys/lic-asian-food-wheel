@@ -1150,7 +1150,7 @@
         saveState();
         renderAll();
         showToast(`${restaurants[skipped].name} 先跳过，重新抽。`);
-        window.setTimeout(spin, 220);
+        spin();
       }
 
       function restoreAll() {
