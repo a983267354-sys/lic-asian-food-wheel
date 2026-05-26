@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>附近吃什么转盘</title>
+    <title>嫣然吃什么转盘</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ffcf5f'/%3E%3Cpath d='M32 8v24l20-12A28 28 0 0 0 32 8Z' fill='%23ff6b6b'/%3E%3Cpath d='M32 32 12 44a28 28 0 0 0 40 0Z' fill='%2361d3b2'/%3E%3Ccircle cx='32' cy='32' r='9' fill='%23fff8e5'/%3E%3C/svg%3E"
@@ -559,6 +559,99 @@
         visibility: visible;
       }
 
+      .intro-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 30%, rgba(255, 207, 95, 0.14), transparent 20rem),
+          rgba(10, 11, 13, 0.92);
+        opacity: 1;
+        transition:
+          opacity 260ms ease,
+          visibility 260ms ease;
+      }
+
+      .intro-overlay[hidden] {
+        display: none;
+      }
+
+      .intro-overlay.is-closing {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .intro-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+      }
+
+      .intro-copy {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        width: min(92vw, 640px);
+        padding: 26px 18px;
+        text-align: center;
+      }
+
+      .intro-kicker {
+        margin: 0;
+        color: var(--accent-2);
+        font-size: 0.82rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .intro-title {
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(2.35rem, 8vw, 5.6rem);
+        line-height: 0.95;
+        letter-spacing: 0;
+        text-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+        animation: introPop 760ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+      }
+
+      .intro-subtitle {
+        margin: 0;
+        color: rgba(246, 243, 238, 0.78);
+        font-size: clamp(1rem, 2.8vw, 1.35rem);
+        line-height: 1.4;
+      }
+
+      .intro-skip {
+        margin-top: 4px;
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 8px;
+        background: rgba(255, 207, 95, 0.96);
+        color: #15120b;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      @keyframes introPop {
+        0% {
+          opacity: 0;
+          transform: translateY(16px) scale(0.96);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
       @media (max-width: 980px) {
         .app {
           grid-template-columns: 1fr;
@@ -806,6 +899,16 @@
         </section>
       </aside>
     </main>
+
+    <div class="intro-overlay" id="introOverlay" role="dialog" aria-modal="true" aria-label="开场提示" hidden>
+      <canvas class="intro-canvas" id="introCanvas" aria-hidden="true"></canvas>
+      <div class="intro-copy">
+        <p class="intro-kicker">今日开饭提示</p>
+        <h2 class="intro-title">身体最重要，求求吃点吧</h2>
+        <p class="intro-subtitle">转盘已经准备好了。</p>
+        <button class="intro-skip" id="introSkip" type="button">好，去吃</button>
+      </div>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1161,6 +1264,9 @@
       const historyEmpty = document.getElementById("historyEmpty");
       const clearHistory = document.getElementById("clearHistory");
       const toast = document.getElementById("toast");
+      const introOverlay = document.getElementById("introOverlay");
+      const introCanvas = document.getElementById("introCanvas");
+      const introSkip = document.getElementById("introSkip");
       const locationLabel = document.getElementById("locationLabel");
       const sourceStatus = document.getElementById("sourceStatus");
       const locationForm = document.getElementById("locationForm");
@@ -1180,6 +1286,8 @@
       let spinning = false;
       let loadingNearby = false;
       let toastTimer = null;
+      let introAnimation = null;
+      let introCloseTimer = null;
 
       function loadState() {
         try {
@@ -1850,6 +1958,108 @@
         toastTimer = setTimeout(() => toast.classList.remove("show"), 1900);
       }
 
+      function startIntro() {
+        if (!introOverlay || !introCanvas) return;
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        introOverlay.hidden = false;
+        introOverlay.classList.remove("is-closing");
+        introSkip.focus({ preventScroll: true });
+
+        if (reducedMotion) {
+          introCloseTimer = window.setTimeout(closeIntro, 2400);
+          return;
+        }
+
+        const introCtx = introCanvas.getContext("2d");
+        const particles = [];
+        const palette = ["#ffcf5f", "#61d3b2", "#ff6b6b", "#72ddf7", "#f15bb5", "#f9844a"];
+        let lastBurst = 0;
+        let burstCount = 0;
+        let startedAt = performance.now();
+
+        function resizeIntro() {
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          introCanvas.width = Math.floor(window.innerWidth * dpr);
+          introCanvas.height = Math.floor(window.innerHeight * dpr);
+          introCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function burst() {
+          const x = window.innerWidth * (0.18 + Math.random() * 0.64);
+          const y = window.innerHeight * (0.16 + Math.random() * 0.42);
+          const color = palette[burstCount % palette.length];
+          const pieces = 34 + Math.floor(Math.random() * 20);
+          for (let i = 0; i < pieces; i += 1) {
+            const angle = (Math.PI * 2 * i) / pieces + Math.random() * 0.16;
+            const speed = 1.5 + Math.random() * 4.6;
+            particles.push({
+              x,
+              y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              life: 60 + Math.random() * 34,
+              age: 0,
+              size: 1.8 + Math.random() * 2.8,
+              color
+            });
+          }
+          burstCount += 1;
+        }
+
+        function animate(now) {
+          const elapsed = now - startedAt;
+          introCtx.globalCompositeOperation = "source-over";
+          introCtx.fillStyle = "rgba(10, 11, 13, 0.18)";
+          introCtx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+          if (elapsed < 2600 && now - lastBurst > 360) {
+            burst();
+            lastBurst = now;
+          }
+
+          introCtx.globalCompositeOperation = "lighter";
+          for (let i = particles.length - 1; i >= 0; i -= 1) {
+            const particle = particles[i];
+            particle.age += 1;
+            particle.vy += 0.045;
+            particle.vx *= 0.988;
+            particle.vy *= 0.988;
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+
+            const alpha = Math.max(0, 1 - particle.age / particle.life);
+            introCtx.globalAlpha = alpha;
+            introCtx.fillStyle = particle.color;
+            introCtx.beginPath();
+            introCtx.arc(particle.x, particle.y, particle.size * alpha, 0, TAU);
+            introCtx.fill();
+
+            if (particle.age >= particle.life) particles.splice(i, 1);
+          }
+          introCtx.globalAlpha = 1;
+
+          if (!introOverlay.hidden && !introOverlay.classList.contains("is-closing")) {
+            introAnimation = requestAnimationFrame(animate);
+          }
+        }
+
+        resizeIntro();
+        window.addEventListener("resize", resizeIntro, { passive: true });
+        burst();
+        introAnimation = requestAnimationFrame(animate);
+        introCloseTimer = window.setTimeout(closeIntro, 4200);
+      }
+
+      function closeIntro(event) {
+        if (!introOverlay || introOverlay.hidden) return;
+        clearTimeout(introCloseTimer);
+        if (introAnimation) cancelAnimationFrame(introAnimation);
+        introOverlay.classList.add("is-closing");
+        window.setTimeout(() => {
+          introOverlay.hidden = true;
+        }, 280);
+      }
+
       async function autoLocateOnce() {
         const autoKey = "food-wheel-auto-location-v1";
         if (localStorage.getItem(autoKey) || location.protocol !== "https:" || !navigator.geolocation) return;
@@ -1871,11 +2081,14 @@
         saveState();
         renderHistory();
       });
+      introSkip.addEventListener("click", closeIntro);
+      introOverlay.addEventListener("click", closeIntro);
 
       window.addEventListener("resize", resizeCanvas);
       setInitialControls();
       applyFilters();
       resizeCanvas();
+      startIntro();
       if (window.location.protocol === "file:") {
         sourceStatus.innerHTML = `<strong>本地预览</strong> · 线上链接支持自动查附近`;
       } else {
