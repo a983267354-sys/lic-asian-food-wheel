@@ -746,7 +746,7 @@
         <div class="topbar">
           <div class="brand">
             <h1>嫣然吃什么</h1>
-            <p id="locationLabel">正在准备附近餐厅</p>
+            <p id="locationLabel">选择口味</p>
           </div>
           <div class="counter" id="activeCount">20 家</div>
         </div>
@@ -1900,8 +1900,7 @@
       }
 
       function updateLocationText() {
-        const label = state.location?.label || DEFAULT_LOCATION.label;
-        locationLabel.textContent = `${label} · ${cuisineLabels[state.filters.cuisine] || "都可以"}`;
+        locationLabel.textContent = "选择口味";
       }
 
       function setLoading(isLoading, message = "") {
