@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LIC 亚洲美食转盘</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101112;
+        --panel: #181b1f;
+        --panel-2: #20242a;
+        --line: rgba(255, 255, 255, 0.12);
+        --text: #f6f3ee;
+        --muted: #aeb5bd;
+        --accent: #ffcf5f;
+        --accent-2: #61d3b2;
+        --danger: #ff6b6b;
+        --shadow: 0 20px 70px rgba(0, 0, 0, 0.42);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 15% 0%, rgba(97, 211, 178, 0.18), transparent 28rem),
+          radial-gradient(circle at 92% 18%, rgba(255, 207, 95, 0.14), transparent 26rem),
+          linear-gradient(135deg, #101112 0%, #161418 46%, #11161a 100%);
+        color: var(--text);
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+        gap: 28px;
+        padding: clamp(16px, 3vw, 36px);
+      }
+
+      .stage {
+        display: grid;
+        grid-template-rows: auto minmax(360px, 1fr) auto;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(1.65rem, 3vw, 3.15rem);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      .brand p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      .counter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 92px;
+        height: 42px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        white-space: nowrap;
+      }
+
+      .wheel-zone {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: min(72vh, 720px);
+      }
+
+      .wheel-shell {
+        position: relative;
+        width: min(78vh, 72vw, 760px);
+        max-width: 100%;
+        aspect-ratio: 1;
+        filter: drop-shadow(var(--shadow));
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+      }
+
+      .pointer {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        z-index: 2;
+        width: 0;
+        height: 0;
+        transform: translateX(-50%);
+        border-left: 20px solid transparent;
+        border-right: 20px solid transparent;
+        border-top: 0;
+        border-bottom: 42px solid var(--accent);
+        filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.42));
+      }
+
+      .center-button {
+        position: absolute;
+        inset: 50% auto auto 50%;
+        width: clamp(118px, 18vw, 172px);
+        aspect-ratio: 1;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(226, 232, 237, 0.92)),
+          var(--text);
+        color: #111216;
+        box-shadow:
+          inset 0 0 0 8px rgba(17, 18, 22, 0.08),
+          0 18px 45px rgba(0, 0, 0, 0.38);
+        cursor: pointer;
+        transition:
+          transform 180ms ease,
+          box-shadow 180ms ease,
+          opacity 180ms ease;
+      }
+
+      .center-button:hover {
+        transform: translate(-50%, -50%) scale(1.035);
+      }
+
+      .center-button:active {
+        transform: translate(-50%, -50%) scale(0.98);
+      }
+
+      .center-button[disabled] {
+        cursor: wait;
+        opacity: 0.78;
+      }
+
+      .center-button strong {
+        display: block;
+        font-size: clamp(1.35rem, 2.7vw, 2rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .center-button span {
+        display: block;
+        margin-top: 8px;
+        font-size: 0.82rem;
+        color: rgba(17, 18, 22, 0.62);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 15px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        border: 1px solid var(--line);
+        cursor: pointer;
+        transition:
+          background 160ms ease,
+          border-color 160ms ease,
+          transform 160ms ease;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.13);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn.primary {
+        background: var(--accent);
+        border-color: transparent;
+        color: #15120b;
+        font-weight: 800;
+      }
+
+      .btn.primary:hover {
+        background: #ffda7e;
+      }
+
+      .btn.danger {
+        color: #ffe6e6;
+      }
+
+      .btn[disabled] {
+        opacity: 0.48;
+        cursor: not-allowed;
+      }
+
+      .icon {
+        width: 17px;
+        height: 17px;
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.1;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: 0 0 auto;
+      }
+
+      .sidebar {
+        min-width: 0;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr);
+        gap: 14px;
+      }
+
+      .panel {
+        background: rgba(24, 27, 31, 0.84);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 22px 58px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(18px);
+      }
+
+      .result-panel {
+        padding: 18px;
+        min-height: 194px;
+        display: grid;
+        align-content: center;
+        gap: 12px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--accent-2);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 800;
+      }
+
+      .result-name {
+        margin: 0;
+        font-size: clamp(1.65rem, 4vw, 2.3rem);
+        line-height: 1;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .result-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e8edf0;
+        font-size: 0.84rem;
+      }
+
+      .result-note,
+      .result-address {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .result-address {
+        color: #d8dde1;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 14px 10px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 1rem;
+        letter-spacing: 0;
+      }
+
+      .tiny {
+        color: var(--muted);
+        font-size: 0.82rem;
+        white-space: nowrap;
+      }
+
+      .restaurant-list {
+        max-height: min(48vh, 520px);
+        overflow: auto;
+        padding: 0 10px 10px;
+        scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+      }
+
+      .restaurant {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+      }
+
+      .restaurant + .restaurant {
+        margin-top: 3px;
+      }
+
+      .restaurant.is-picked {
+        border-color: rgba(255, 207, 95, 0.52);
+        background: rgba(255, 207, 95, 0.08);
+      }
+
+      .dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #111216;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .restaurant-main {
+        min-width: 0;
+      }
+
+      .restaurant-title {
+        margin: 0;
+        color: var(--text);
+        font-weight: 760;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .restaurant-sub {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .mini-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .mini-btn:hover {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .history-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 14px 14px;
+      }
+
+      .empty {
+        padding: 0 14px 14px;
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        z-index: 5;
+        transform: translate(-50%, calc(100% + 28px));
+        min-width: min(420px, calc(100vw - 28px));
+        max-width: calc(100vw - 28px);
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: rgba(246, 243, 238, 0.96);
+        color: #111216;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+        font-weight: 700;
+        text-align: center;
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        transition:
+          transform 220ms ease,
+          opacity 220ms ease,
+          visibility 220ms ease;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        visibility: visible;
+      }
+
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .stage {
+          min-height: auto;
+        }
+
+        .wheel-zone {
+          min-height: auto;
+          padding: 10px 0 6px;
+        }
+
+        .wheel-shell {
+          width: min(86vw, 620px);
+        }
+
+        .sidebar {
+          grid-template-rows: auto auto auto;
+        }
+
+        .restaurant-list {
+          max-height: none;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .app {
+          padding: 14px;
+          gap: 18px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .counter {
+          min-width: auto;
+          height: 36px;
+        }
+
+        .wheel-shell {
+          width: min(92vw, 520px);
+        }
+
+        .pointer {
+          border-left-width: 15px;
+          border-right-width: 15px;
+          border-bottom-width: 34px;
+        }
+
+        .center-button {
+          width: 116px;
+        }
+
+        .actions {
+          justify-content: stretch;
+        }
+
+        .btn {
+          flex: 1 1 142px;
+        }
+
+        .restaurant {
+          grid-template-columns: 30px minmax(0, 1fr) 32px;
+          padding: 9px 8px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="stage" aria-label="转盘">
+        <div class="topbar">
+          <div class="brand">
+            <h1>今晚吃什么</h1>
+            <p>25-20 43rd Ave 附近亚洲口味</p>
+          </div>
+          <div class="counter" id="activeCount">20 家</div>
+        </div>
+
+        <div class="wheel-zone">
+          <div class="wheel-shell">
+            <div class="pointer" aria-hidden="true"></div>
+            <canvas id="wheel" width="900" height="900" aria-label="餐厅转盘"></canvas>
+            <button class="center-button" id="spinCenter" type="button">
+              <span>
+                <strong>开转</strong>
+                <span id="centerHint">20 选 1</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="spinButton" type="button">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            开转
+          </button>
+          <button class="btn" id="skipButton" type="button" disabled>
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+            这家先跳过
+          </button>
+          <button class="btn" id="restoreButton" type="button">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M3 12a9 9 0 1 0 3-6.7" />
+              <path d="M3 3v6h6" />
+            </svg>
+            恢复 20 家
+          </button>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel result-panel" aria-live="polite">
+          <p class="eyebrow" id="resultEyebrow">今天交给转盘</p>
+          <h2 class="result-name" id="resultName">先转一下</h2>
+          <div class="result-meta" id="resultMeta">
+            <span class="pill">亚洲口味</span>
+            <span class="pill">LIC / Court Square</span>
+          </div>
+          <p class="result-address" id="resultAddress">25-20 43rd Ave, Long Island City, NY 11101</p>
+          <p class="result-note" id="resultNote">选择困难先放一边。</p>
+          <a class="btn primary" id="mapLink" href="https://www.google.com/maps/search/?api=1&query=Asian%20restaurants%20near%2025-20%2043rd%20Ave%20Long%20Island%20City%20NY%2011101" target="_blank" rel="noreferrer">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            导航
+          </a>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>候选餐厅</h2>
+            <span class="tiny" id="listCount">20 / 20</span>
+          </div>
+          <div class="restaurant-list" id="restaurantList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>已抽中</h2>
+            <button class="mini-btn" id="clearHistory" type="button" title="清空记录" aria-label="清空记录">
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M3 6h18" />
+                <path d="M8 6V4h8v2" />
+                <path d="m19 6-1 14H6L5 6" />
+                <path d="M10 11v5" />
+                <path d="M14 11v5" />
+              </svg>
+            </button>
+          </div>
+          <div class="history-list" id="historyList"></div>
+          <p class="empty" id="historyEmpty">还没有。</p>
+        </section>
+      </aside>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const restaurants = [
+        {
+          name: "Soothr LIC",
+          cuisine: "泰餐",
+          address: "25-20 43rd Ave",
+          note: "Khao soi、pad see ew、螃蟹咖喱，楼下就能开吃。"
+        },
+        {
+          name: "Vert Frais",
+          cuisine: "日式拉面",
+          address: "43-10 Crescent St",
+          note: "拉面、饭碗、舒芙蕾松饼，午饭和 brunch 都很合适。"
+        },
+        {
+          name: "Ooi Sushi & Bar",
+          cuisine: "寿司",
+          address: "42-36 Crescent St",
+          note: "想吃清爽一点时，寿司和 sashimi 比较稳。"
+        },
+        {
+          name: "Nai Brother LIC",
+          cuisine: "酸菜鱼",
+          address: "27-17 42nd Rd",
+          note: "酸菜鱼、青花椒、番茄锅，适合想吃热汤重口。"
+        },
+        {
+          name: "Kyuramen LIC",
+          cuisine: "日式拉面",
+          address: "27-17 42nd Rd",
+          note: "豚骨拉面、咖喱饭、蛋包饭，快准稳。"
+        },
+        {
+          name: "Master L Rice Noodle",
+          cuisine: "云南米线",
+          address: "42-43 27th St",
+          note: "过桥米线和小吃，冷天尤其友好。"
+        },
+        {
+          name: "Raj's Indian Kitchen",
+          cuisine: "印度菜",
+          address: "42-12 28th St",
+          note: "咖喱、naan、biryani，外卖和堂食都轻松。"
+        },
+        {
+          name: "Xi'an Famous Foods",
+          cuisine: "西安小吃",
+          address: "26-19 Jackson Ave",
+          note: "油泼面、孜然羊肉、肉夹馍，选择困难时很能救场。"
+        },
+        {
+          name: "Red Sorghum",
+          cuisine: "中餐",
+          address: "28-03 Jackson Ave",
+          note: "偏湖南/中式小炒，适合多人点菜。"
+        },
+        {
+          name: "Dim Sum Palace LIC",
+          cuisine: "粤式点心",
+          address: "24-28 Jackson Ave",
+          note: "虾饺、烧卖、肠粉、小笼，一桌小笼屉解决晚饭。"
+        },
+        {
+          name: "Gacha Gacha",
+          cuisine: "日式居酒屋",
+          address: "44-46 23rd St",
+          note: "寿司、小食、清酒，适合下班随便坐坐。"
+        },
+        {
+          name: "Umiya",
+          cuisine: "日式",
+          address: "22-22 Jackson Ave",
+          note: "寿司、日式主食，离 Court Square 很近。"
+        },
+        {
+          name: "Hibino LIC",
+          cuisine: "日式家常",
+          address: "10-70 Jackson Ave",
+          note: "豆腐、obanzai、小菜和寿司，口味更温柔。"
+        },
+        {
+          name: "Takumen",
+          cuisine: "拉面居酒屋",
+          address: "5-50 50th Ave",
+          note: "拉面、日式小菜、啤酒，稍微走一走很值得。"
+        },
+        {
+          name: "Hupo",
+          cuisine: "川菜",
+          address: "10-07 50th Ave",
+          note: "麻婆豆腐、干锅、孜然羊，想吃辣就让它上桌。"
+        },
+        {
+          name: "MOGMOG",
+          cuisine: "日式便当",
+          address: "5-35 51st Ave",
+          note: "日式熟食、饭团、便当，轻松快速。"
+        },
+        {
+          name: "Little Banchan Shop",
+          cuisine: "韩餐",
+          address: "5-28 49th Ave",
+          note: "韩式小菜、拌饭、汤类，适合想吃干净家常。"
+        },
+        {
+          name: "Kuku Korean Cuisine",
+          cuisine: "韩餐",
+          address: "40-09 21st St",
+          note: "烤肉、锅物、韩式主食，适合聚餐。"
+        },
+        {
+          name: "Gyu-Kaku LIC",
+          cuisine: "日式烧肉",
+          address: "47-23 Vernon Blvd",
+          note: "自己烤肉，适合把选择困难变成动手劳动。"
+        },
+        {
+          name: "Gulp",
+          cuisine: "台式/亚洲小吃",
+          address: "42-45 27th St",
+          note: "卤肉饭、炸鸡、小吃，随意但快乐。"
+        }
+      ];
+
+      const colors = [
+        "#ff6b6b",
+        "#ffd166",
+        "#61d3b2",
+        "#4cc9f0",
+        "#b487ff",
+        "#ff9f1c",
+        "#2ec4b6",
+        "#e76f51",
+        "#90be6d",
+        "#f15bb5",
+        "#00bbf9",
+        "#fee440",
+        "#9b5de5",
+        "#06d6a0",
+        "#f72585",
+        "#a7c957",
+        "#f9844a",
+        "#72ddf7",
+        "#cdb4db",
+        "#ffbe0b"
+      ];
+
+      const storageKey = "lic-asian-wheel-state-v1";
+      const canvas = document.getElementById("wheel");
+      const ctx = canvas.getContext("2d");
+      const spinButton = document.getElementById("spinButton");
+      const spinCenter = document.getElementById("spinCenter");
+      const skipButton = document.getElementById("skipButton");
+      const restoreButton = document.getElementById("restoreButton");
+      const activeCount = document.getElementById("activeCount");
+      const centerHint = document.getElementById("centerHint");
+      const listCount = document.getElementById("listCount");
+      const restaurantList = document.getElementById("restaurantList");
+      const resultEyebrow = document.getElementById("resultEyebrow");
+      const resultName = document.getElementById("resultName");
+      const resultMeta = document.getElementById("resultMeta");
+      const resultAddress = document.getElementById("resultAddress");
+      const resultNote = document.getElementById("resultNote");
+      const mapLink = document.getElementById("mapLink");
+      const historyList = document.getElementById("historyList");
+      const historyEmpty = document.getElementById("historyEmpty");
+      const clearHistory = document.getElementById("clearHistory");
+      const toast = document.getElementById("toast");
+
+      const TAU = Math.PI * 2;
+      let state = loadState();
+      let rotation = 0;
+      let currentPick = null;
+      let spinning = false;
+      let toastTimer = null;
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+          const active = Array.isArray(saved.active)
+            ? saved.active.filter((index) => Number.isInteger(index) && restaurants[index])
+            : restaurants.map((_, index) => index);
+          return {
+            active: active.length ? active : restaurants.map((_, index) => index),
+            history: Array.isArray(saved.history)
+              ? saved.history.filter((item) => restaurants[item])
+              : []
+          };
+        } catch {
+          return {
+            active: restaurants.map((_, index) => index),
+            history: []
+          };
+        }
+      }
+
+      function saveState() {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const size = Math.max(320, Math.floor(rect.width));
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawWheel();
+      }
+
+      function drawWheel() {
+        const size = canvas.width / Math.min(window.devicePixelRatio || 1, 2);
+        const center = size / 2;
+        const radius = center - 10;
+        const active = state.active;
+        const count = active.length;
+        ctx.clearRect(0, 0, size, size);
+
+        ctx.save();
+        ctx.translate(center, center);
+
+        if (!count) {
+          drawEmptyWheel(radius);
+          ctx.restore();
+          return;
+        }
+
+        const seg = TAU / count;
+        active.forEach((restaurantIndex, slot) => {
+          const start = rotation + slot * seg - Math.PI / 2;
+          const end = start + seg;
+          const isPicked = restaurantIndex === currentPick;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, radius, start, end);
+          ctx.closePath();
+          ctx.fillStyle = colors[restaurantIndex % colors.length];
+          ctx.fill();
+
+          ctx.lineWidth = isPicked ? 5 : 2;
+          ctx.strokeStyle = isPicked ? "rgba(255,255,255,0.95)" : "rgba(17,18,22,0.24)";
+          ctx.stroke();
+
+          drawSliceLabel(restaurants[restaurantIndex], restaurantIndex, start + seg / 2, radius, count);
+        });
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, TAU);
+        ctx.lineWidth = 9;
+        ctx.strokeStyle = "rgba(255,255,255,0.92)";
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius - 18, 0, TAU);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = "rgba(17,18,22,0.22)";
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawEmptyWheel(radius) {
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, TAU);
+        ctx.fillStyle = "#24282f";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.28)";
+        ctx.lineWidth = 8;
+        ctx.stroke();
+      }
+
+      function drawSliceLabel(restaurant, restaurantIndex, angle, radius, count) {
+        if (radius < 230) {
+          drawCompactSliceLabel(restaurantIndex, angle, radius);
+          return;
+        }
+
+        const textRadius = count > 14 ? radius * 0.68 : radius * 0.64;
+        const text = `${restaurantIndex + 1}. ${restaurant.name}`;
+        const max = count > 14 ? 15 : 20;
+        const label = text.length > max ? `${text.slice(0, max - 1)}…` : text;
+        const x = Math.cos(angle) * textRadius;
+        const y = Math.sin(angle) * textRadius;
+        const baseColor = colors[restaurantIndex % colors.length];
+        const darkText = shouldUseDarkText(baseColor);
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle + Math.PI / 2);
+        if (Math.sin(angle) > 0) {
+          ctx.rotate(Math.PI);
+        }
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = darkText ? "rgba(17,18,22,0.92)" : "rgba(255,255,255,0.96)";
+        ctx.font = `800 ${count > 16 ? 12 : 14}px Inter, system-ui, sans-serif`;
+        ctx.fillText(label, 0, 0);
+        ctx.font = `650 ${count > 16 ? 10 : 11}px Inter, system-ui, sans-serif`;
+        ctx.globalAlpha = 0.84;
+        ctx.fillText(restaurant.cuisine, 0, 15);
+        ctx.restore();
+      }
+
+      function drawCompactSliceLabel(restaurantIndex, angle, radius) {
+        const textRadius = radius * 0.76;
+        const x = Math.cos(angle) * textRadius;
+        const y = Math.sin(angle) * textRadius;
+        const number = String(restaurantIndex + 1);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.beginPath();
+        ctx.arc(0, 0, 11, 0, TAU);
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fill();
+        ctx.fillStyle = "#111216";
+        ctx.font = "850 10px Inter, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(number, 0, 0.4);
+        ctx.restore();
+      }
+
+      function shouldUseDarkText(hex) {
+        const value = hex.replace("#", "");
+        const r = parseInt(value.slice(0, 2), 16);
+        const g = parseInt(value.slice(2, 4), 16);
+        const b = parseInt(value.slice(4, 6), 16);
+        return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+      }
+
+      function renderAll() {
+        renderCounts();
+        renderRestaurants();
+        renderHistory();
+        drawWheel();
+      }
+
+      function renderCounts() {
+        activeCount.textContent = `${state.active.length} 家`;
+        centerHint.textContent = `${state.active.length} 选 1`;
+        listCount.textContent = `${state.active.length} / ${restaurants.length}`;
+        skipButton.disabled = spinning || currentPick === null || !state.active.includes(currentPick) || state.active.length < 2;
+      }
+
+      function renderRestaurants() {
+        restaurantList.innerHTML = "";
+        restaurants.forEach((restaurant, index) => {
+          const active = state.active.includes(index);
+          const item = document.createElement("article");
+          item.className = `restaurant${index === currentPick ? " is-picked" : ""}`;
+          item.style.opacity = active ? "1" : "0.42";
+
+          const dot = document.createElement("div");
+          dot.className = "dot";
+          dot.style.background = colors[index % colors.length];
+          dot.textContent = index + 1;
+
+          const main = document.createElement("div");
+          main.className = "restaurant-main";
+          main.innerHTML = `
+            <p class="restaurant-title"></p>
+            <p class="restaurant-sub"></p>
+          `;
+          main.querySelector(".restaurant-title").textContent = restaurant.name;
+          main.querySelector(".restaurant-sub").textContent = `${restaurant.cuisine} · ${restaurant.address}`;
+
+          const toggle = document.createElement("button");
+          toggle.className = "mini-btn";
+          toggle.type = "button";
+          toggle.title = active ? "移出转盘" : "加入转盘";
+          toggle.setAttribute("aria-label", active ? `移出 ${restaurant.name}` : `加入 ${restaurant.name}`);
+          toggle.innerHTML = active
+            ? `<svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`
+            : `<svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`;
+          toggle.addEventListener("click", () => toggleRestaurant(index));
+
+          item.append(dot, main, toggle);
+          restaurantList.appendChild(item);
+        });
+      }
+
+      function renderHistory() {
+        historyList.innerHTML = "";
+        historyEmpty.hidden = state.history.length > 0;
+        state.history.slice(0, 8).forEach((restaurantIndex) => {
+          const restaurant = restaurants[restaurantIndex];
+          const pill = document.createElement("span");
+          pill.className = "pill";
+          pill.textContent = restaurant.name;
+          historyList.appendChild(pill);
+        });
+      }
+
+      function setResult(index) {
+        const restaurant = restaurants[index];
+        currentPick = index;
+        resultEyebrow.textContent = "转盘选中";
+        resultName.textContent = restaurant.name;
+        resultMeta.innerHTML = "";
+        [restaurant.cuisine, "Long Island City"].forEach((text) => {
+          const pill = document.createElement("span");
+          pill.className = "pill";
+          pill.textContent = text;
+          resultMeta.appendChild(pill);
+        });
+        resultAddress.textContent = restaurant.address;
+        resultNote.textContent = restaurant.note;
+        mapLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name} ${restaurant.address} Long Island City NY`)}`;
+        state.history = [index, ...state.history.filter((item) => item !== index)].slice(0, 12);
+        saveState();
+        renderAll();
+      }
+
+      function randomSlot() {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return array[0] % state.active.length;
+      }
+
+      function spin() {
+        if (spinning || state.active.length === 0) return;
+        const selectedSlot = randomSlot();
+        const selectedIndex = state.active[selectedSlot];
+        const seg = TAU / state.active.length;
+        const startRotation = rotation;
+        const targetBase = -(selectedSlot + 0.5) * seg;
+        let endRotation = targetBase;
+        const minimum = startRotation + TAU * (5 + Math.floor(Math.random() * 3));
+        while (endRotation < minimum) {
+          endRotation += TAU;
+        }
+
+        const duration = 3600 + Math.random() * 900;
+        const start = performance.now();
+        spinning = true;
+        currentPick = null;
+        spinButton.disabled = true;
+        spinCenter.disabled = true;
+        skipButton.disabled = true;
+        resultEyebrow.textContent = "转盘旋转中";
+        resultName.textContent = "等等看";
+        resultNote.textContent = "命运正在和晚饭商量。";
+        drawWheel();
+
+        function animate(now) {
+          const raw = Math.min(1, (now - start) / duration);
+          const eased = 1 - Math.pow(1 - raw, 4);
+          rotation = startRotation + (endRotation - startRotation) * eased;
+          drawWheel();
+          if (raw < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            rotation = normalize(endRotation);
+            spinning = false;
+            spinButton.disabled = false;
+            spinCenter.disabled = false;
+            setResult(selectedIndex);
+            showToast(`今天吃：${restaurants[selectedIndex].name}`);
+          }
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      function normalize(value) {
+        return ((value % TAU) + TAU) % TAU;
+      }
+
+      function toggleRestaurant(index) {
+        if (spinning) return;
+        if (state.active.includes(index)) {
+          if (state.active.length === 1) {
+            showToast("至少留一家。");
+            return;
+          }
+          state.active = state.active.filter((item) => item !== index);
+          if (currentPick === index) currentPick = null;
+        } else {
+          state.active = [...state.active, index].sort((a, b) => a - b);
+        }
+        saveState();
+        renderAll();
+      }
+
+      function skipCurrent() {
+        if (currentPick === null || state.active.length < 2) return;
+        state.active = state.active.filter((item) => item !== currentPick);
+        showToast(`${restaurants[currentPick].name} 先跳过`);
+        currentPick = null;
+        saveState();
+        renderAll();
+      }
+
+      function restoreAll() {
+        state.active = restaurants.map((_, index) => index);
+        currentPick = null;
+        saveState();
+        renderAll();
+        showToast("20 家已恢复。");
+      }
+
+      function showToast(message) {
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.classList.add("show");
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 1900);
+      }
+
+      spinButton.addEventListener("click", spin);
+      spinCenter.addEventListener("click", spin);
+      skipButton.addEventListener("click", skipCurrent);
+      restoreButton.addEventListener("click", restoreAll);
+      clearHistory.addEventListener("click", () => {
+        state.history = [];
+        saveState();
+        renderHistory();
+      });
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+      renderAll();
+    </script>
+  </body>
+</html>
