@@ -1903,16 +1903,58 @@
       }
 
       async function geocodeAddress(query) {
-        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=zh-CN,en&q=${encodeURIComponent(query)}`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("地址服务暂时不可用。");
-        const data = await response.json();
-        if (!data.length) throw new Error("没找到这个地址。");
+        const queries = buildAddressQueries(query);
+        let data = [];
+        let matchedQuery = queries[0];
+        for (const addressQuery of queries) {
+          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=zh-CN,en&q=${encodeURIComponent(addressQuery)}`;
+          const response = await fetch(url);
+          if (!response.ok) throw new Error("地址服务暂时不可用。");
+          data = await response.json();
+          if (data.length) {
+            matchedQuery = addressQuery;
+            break;
+          }
+        }
+        if (!data.length) throw new Error("没找到这个地址，试试写成 30-02 39th Avenue, Queens, NY。");
         return {
-          label: simplifyAddress(data[0].display_name || query),
+          label: simplifyAddress(looksLikeStreetAddress(matchedQuery) ? matchedQuery : data[0].display_name || matchedQuery),
           lat: Number(data[0].lat),
           lon: Number(data[0].lon)
         };
+      }
+
+      function buildAddressQueries(query) {
+        const cleaned = query.trim().replace(/\s+/g, " ");
+        const variants = [cleaned];
+        const normalizedCity = cleaned.replace(/\bLong Island\b(?!\s+City)/i, "Long Island City");
+        variants.push(normalizedCity);
+
+        const queensAddress = toQueensHyphenAddress(normalizedCity);
+        if (queensAddress) {
+          variants.push(queensAddress);
+          variants.push(queensAddress.replace(/\bAve\b\.?/i, "Avenue"));
+          variants.push(queensAddress.replace(/,\s*Long Island City\b/i, ", Queens"));
+          variants.push(queensAddress.replace(/\bAve\b\.?/i, "Avenue").replace(/,\s*Long Island City\b/i, ", Queens"));
+        }
+
+        const expanded = normalizedCity.replace(/\bAve\b\.?/i, "Avenue");
+        variants.push(expanded);
+        variants.push(`${expanded}, Queens, NY`);
+        return [...new Set(variants.map((item) => item.replace(/\s*,\s*/g, ", ").trim()))];
+      }
+
+      function toQueensHyphenAddress(query) {
+        const match = query.match(/^(\d{4,5})\s+(.+)$/);
+        if (!match || query.includes("-")) return "";
+        const number = match[1];
+        const rest = match[2];
+        const houseNumber = `${number.slice(0, -2)}-${number.slice(-2)}`;
+        return `${houseNumber} ${rest}`;
+      }
+
+      function looksLikeStreetAddress(query) {
+        return /^\d{1,5}(?:-\d{1,3})?\s+/.test(query);
       }
 
       async function fetchNearbyRestaurants(location, radius) {
